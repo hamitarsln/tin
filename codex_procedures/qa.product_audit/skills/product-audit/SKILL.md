@@ -22,6 +22,8 @@ you did not see is not a finding. Write only the report path declared by Tin.
      labels, and alt text; never guess them from the text.
    - `camoufox.click(selector)`, `camoufox.click_role(role, name)`,
      `camoufox.fill(selector, value)`, and `camoufox.press(key)` act like a user.
+     Use the exact accessible name from `snapshot` for `click_role`; duplicate names need a
+     specific selector, not a guessed first match.
    - `camoufox.wait_for(selector | text, timeout_seconds)` waits for something to appear.
    - `camoufox.evaluate(expression)` runs JavaScript and returns JSON. Use it only for the
      read-only recipes in §6; never to bypass a guard, mutate state, or call an API the UI does
