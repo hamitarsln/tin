@@ -1975,8 +1975,8 @@ def _content_review_findings(view: SiteView, host: str) -> list[dict]:
             issue="Top pages are not written the way AI answers quote",
             impact="medium",
             evidence=[
-                f"Reviewed the {count(len(review.get('pages', [])), 'page')} with the most "
-                "search impressions against answer-engine practice.",
+                f"Reviewed {count(len(review.get('pages', [])), 'selected content page')} "
+                "against answer-engine practice.",
                 *(
                     f"{_path(row['url'])}"
                     + (f' ("{row["query"]}")' if row.get("query") else "")
