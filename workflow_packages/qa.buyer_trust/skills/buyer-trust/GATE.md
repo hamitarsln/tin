@@ -320,8 +320,9 @@ def gate(evidence, as_of):
         fix(
             "exposed_paths",
             "fix_now",
-            f"{' and '.join(exposed)} must return 404. If either returned 200, block it at the "
-            "host and rotate any secret it held today, out of band.",
+            f"{' and '.join(exposed)} must return 404. Block the paths at the host. "
+            "A 200 may be an HTML app fallback; it does not prove file or secret exposure. "
+            "If a file was served, rotate any secret it held today, out of band.",
             "founder",
         )
 

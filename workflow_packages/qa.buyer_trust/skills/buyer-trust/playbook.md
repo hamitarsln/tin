@@ -47,8 +47,9 @@ These are decisions or policy text, so no workflow makes them:
 - Refunds or cancellation: state the terms the business actually offers and link them within one
   click of checkout. Match the Feature map; never promise terms the founder has not chosen.
 - Total before pay and guest checkout: checkout and pricing decisions.
-- `/.git/HEAD` or `/.env` returning 200: block the path at the host today and rotate every secret
-  the file held, out of band. Treat as Fix now.
+- `/.git/HEAD` or `/.env` returning 200: block the path at the host today. A 200 may be an HTML
+  app fallback; it does not prove file or secret exposure. If a file was served, rotate every
+  secret it held, out of band. Treat the path response as Fix now.
 
 ## What this playbook is not
 

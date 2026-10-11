@@ -203,6 +203,9 @@ def test_exposed_repository_or_env_path_fails_and_goes_to_the_founder(trust):
     exposed = fixes_by_id(result)["exposed_paths"]
     assert exposed["owner"] == "founder"
     assert "/.env" in exposed["fix"] and "rotate" in exposed["fix"]
+    assert "does not prove file or secret exposure" in exposed["fix"]
+    assert "If a file was served" in exposed["fix"]
+    assert "If either returned 200" not in exposed["fix"]
     assert "site_health_improve" not in exposed
 
 
