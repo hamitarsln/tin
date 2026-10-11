@@ -153,10 +153,10 @@ For each checklist entry, in order:
 
 | What you saw | Result |
 |---|---|
-| The action completed and the screen showed the outcome the feature promises, with no new error line attributable to it | `works` |
-| The action could not be completed, produced an error, did nothing visible, or the outcome was wrong or missing | `broken` |
+| The action completed and the screen showed the outcome the feature promises, with no unexpected error attributable to it; clearly handled expected permission or validation responses do not prevent this result | `works` |
+| The action could not be completed, produced an unexpected error, did nothing visible, or the outcome was wrong or missing | `broken` |
 | It completed, but behaved differently from the Feature map line, the product's own docs or pricing copy, or the copy on the screen (a label promising one thing and doing another; a limit the docs say does not exist) | `inconsistent` |
-| It completed, but with new console errors or failed requests, a wait over five seconds, or only after a workaround a user would need (second attempt, closing a stuck modal, navigating by URL) | `degraded` |
+| It completed, but with new unexpected console errors or failed requests (excluding clearly handled expected permission or validation responses), a wait over five seconds, or only after a workaround a user would need (second attempt, closing a stuck modal, navigating by URL) | `degraded` |
 | Not attempted, not reachable within budget, or behind a wall | `not-reached` |
 
 7. Record one Coverage row per feature with the finding ids it produced (assigned in §7).
@@ -206,8 +206,8 @@ Each check yields one Coverage row with Area `cross-cutting` and Map status `-`,
    `extensive`): pick the core-action form or the first form with required fields. Leave every
    field empty and submit once with `camoufox.click_role("button", "<submit label>")`. Read
    `camoufox.snapshot`. Expected: inline messages next to the fields or a clear summary, and no
-   request that fails. A silent no-op, a raw server error, or a submitted empty record is a
-   finding.
+   unexpected request failure. A clearly handled invalid-input response does not fail this
+   check. A silent no-op, a raw server error, or a submitted empty record is a finding.
 5. Empty states: for each list, table, or board that showed zero rows, read `camoufox.snapshot`
    and note whether the empty area offers guidance (a heading, one sentence, or a call to
    action). A blank region, a spinner that never resolves, or "undefined" is a finding.
