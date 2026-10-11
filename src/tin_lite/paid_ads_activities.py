@@ -224,9 +224,16 @@ class PaidAdsActivities:
             needs="model",
         )
         if result["status"] != "completed":
-            await self._save(run_id, "failure", {"code": "model_unavailable", "stage": step})
+            code = (
+                "spending_limit"
+                if result.get("reason") == "spending_limit"
+                else "model_unavailable"
+            )
+            await self._save(run_id, "failure", {"code": code, "stage": step})
             raise ApplicationError(
-                "A model result was unavailable; no replacement was purchased.",
+                "The spending limit stopped a model call; no replacement was purchased."
+                if code == "spending_limit"
+                else "A model result was unavailable; no replacement was purchased.",
                 non_retryable=True,
             )
         if result["value"].get("unusable"):
@@ -956,6 +963,10 @@ class PaidAdsActivities:
             return
         failure = await self._result(run_id, "failure") or {}
         message = {
+            "spending_limit": (
+                "The paid ads assessment stopped because a model call reached the spending limit. "
+                "Saved research was retained; no replacement call was purchased."
+            ),
             "validation": (
                 "The paid ads assessment stopped because a model result failed validation. "
                 "Nothing was published; saved research was retained."

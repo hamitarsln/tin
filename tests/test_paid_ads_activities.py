@@ -323,6 +323,30 @@ async def test_an_unconfirmed_model_step_stops_instead_of_buying_again():
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("limit_source", ["reservation", "billing"])
+async def test_a_model_spending_limit_is_not_reported_as_an_unconfirmed_call(limit_source):
+    from tin_lite.billing_contracts import BillingError
+
+    activities, db, *_rest, router, _ = await fixture()
+    run_id = str(db.run.id)
+    await activities.prepare(run_id)
+    if limit_source == "reservation":
+        assert await activities._reserve(run_id, "earlier", "6")
+    else:
+        router.generate.side_effect = BillingError("spending_limit", "Spending limit reached")
+    for _ in range(2):
+        with pytest.raises(ApplicationError):
+            await activities._model(run_id, "profile", "system", "user", {}, 100, "low")
+    receipt = db.effects[activities.key(run_id, "model:profile")].result
+    assert receipt["status"] == "unavailable" and receipt["reason"] == "spending_limit"
+    assert router.generate.await_count == (0 if limit_source == "reservation" else 1)
+    assert db.effects[activities.key(run_id, "failure")].result["code"] == "spending_limit"
+    await activities.failure(run_id)
+    message = db.project_failure.await_args.kwargs["error_message"]
+    assert "spending limit" in message and "could not be confirmed" not in message
+
+
+@pytest.mark.asyncio
 async def test_unusable_results_replay_and_one_replacement_is_bought():
     model = ActivityModel(unusable=["profile"])
     activities, db, *_rest, router, _ = await fixture(model=model)
