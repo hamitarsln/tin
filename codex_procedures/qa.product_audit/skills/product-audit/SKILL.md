@@ -195,6 +195,10 @@ Each check yields one Coverage row with Area `cross-cutting` and Map status `-`,
    each distinct method + URL + status with a 4xx or 5xx status or a connection failure.
    Deduplicate across the run. Third-party analytics failures are `polish` at most; a failure on
    the product host during a feature is that feature's evidence.
+   Expected permission denials and invalid-input responses are observations, not findings,
+   when the UI handles them clearly and no promised action fails. A failed valid action, an
+   unexplained lock, or a raw server error is still a finding. Harmless repeated requests may
+   go in `## Improvements` when there is a concrete improvement to suggest.
 3. Console errors: after every screen, `camoufox.console_messages()`. Keep `[error]` lines,
    deduplicated by message text with timestamps, ids, and counters stripped. A React or Vue
    warning is `polish`; an uncaught exception during a feature is that feature's evidence.
