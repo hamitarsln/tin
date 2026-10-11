@@ -24,7 +24,7 @@ from tin_lite.ai_answers import (
     call_outcome,
     measure,
 )
-from tin_lite.billing_contracts import BillingError
+from tin_lite.billing_contracts import BillingError, billing_refusal
 from tin_lite.usage_capture import external_usage_scope
 
 OPERATION = "ai.answers"
@@ -94,8 +94,8 @@ class ReceiptLedger:
                         maximum_usd=str(reserve_usd),
                     ):
                         result = await call_outcome(call)
-                except BillingError:
-                    result = {"status": "failed", "reason": "spending_limit"}
+                except BillingError as exc:
+                    result = {"status": "failed", **billing_refusal(exc)}
                 except Exception:  # noqa: BLE001 - a paid attempt's outcome is now unknown.
                     activity.logger.warning("AI answers request outcome is unknown.")
                     result = {"status": "unknown", "reason": "provider_result_unavailable"}

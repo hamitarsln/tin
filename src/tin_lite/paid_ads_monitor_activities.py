@@ -156,10 +156,10 @@ class PaidAdsMonitorActivities:
                         value = await call()
                     result = {"status": "completed", "value": value}
                 except Exception as exc:
-                    from tin_lite.billing_contracts import BillingError
+                    from tin_lite.billing_contracts import BillingError, billing_refusal
 
                     result = (
-                        {"status": "unavailable", "reason": "spending_limit"}
+                        {"status": "unavailable", **billing_refusal(exc)}
                         if isinstance(exc, BillingError)
                         else {"status": "unknown", "reason": "provider_result_unavailable"}
                     )
@@ -211,9 +211,26 @@ class PaidAdsMonitorActivities:
             needs="model",
         )
         if result["status"] != "completed":
-            await self._save(run_id, "failure", {"code": "model_unavailable", "stage": step})
+            reason = result.get("reason")
+            code = (
+                reason if reason in {"billing_refused", "spending_limit"} else "model_unavailable"
+            )
+            await self._save(
+                run_id,
+                "failure",
+                {
+                    "code": code,
+                    "stage": step,
+                    "billing_error_code": result.get("billing_error_code"),
+                },
+            )
+            message = {
+                "billing_refused": "A billing check refused a model call",
+                "spending_limit": "The spending limit stopped a model call",
+                "model_unavailable": "A model result was unavailable",
+            }[code]
             raise ApplicationError(
-                "A model result was unavailable; no replacement was purchased.",
+                f"{message}; no replacement was purchased.",
                 non_retryable=True,
             )
         if result["value"].get("unusable"):
@@ -665,6 +682,15 @@ class PaidAdsMonitorActivities:
             return
         failure = await self._result(run_id, "failure") or {}
         message = {
+            "billing_refused": (
+                "The Google Ads check stopped because a billing check refused a model call "
+                f"({failure.get('billing_error_code')}). Automatic changes already applied stand; "
+                "nothing else was changed."
+            ),
+            "spending_limit": (
+                "The Google Ads check stopped because a model call reached the spending limit. "
+                "Automatic changes already applied stand; nothing else was changed."
+            ),
             "model_unavailable": (
                 "The Google Ads check stopped because a model result could not be confirmed. "
                 "Automatic changes already applied stand; nothing else was changed."

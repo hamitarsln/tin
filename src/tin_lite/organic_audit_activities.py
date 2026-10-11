@@ -233,10 +233,10 @@ class OrganicAuditActivities:
                     with external_usage_scope(self.db, conn, run_id, stage, maximum_usd=amount):
                         result = {"status": "completed", "value": await call()}
                 except Exception as exc:
-                    from tin_lite.billing_contracts import BillingError
+                    from tin_lite.billing_contracts import BillingError, billing_refusal
 
                     if isinstance(exc, BillingError):
-                        result = {"status": "unavailable", "reason": "spending_limit"}
+                        result = {"status": "unavailable", **billing_refusal(exc)}
                     # Preserve only a safe product fact, not raw provider errors.
                     # Leave crawl intent incomplete so a later attempt can recover it.
                     elif recover:

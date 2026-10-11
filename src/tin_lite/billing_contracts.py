@@ -22,6 +22,12 @@ class BillingError(RuntimeError):
         return {"code": self.code, "message": str(self)}
 
 
+def billing_refusal(error: BillingError) -> dict[str, str]:
+    if error.code in {"spending_limit", "run_limit", "project_limit"}:
+        return {"reason": "spending_limit"}
+    return {"reason": "billing_refused", "billing_error_code": error.code}
+
+
 class ProjectSpendingPolicy(BaseModel):
     model_config = ConfigDict(extra="forbid")
     per_run_nanos: Money

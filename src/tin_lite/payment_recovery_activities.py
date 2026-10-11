@@ -581,8 +581,8 @@ class PaymentRecoveryActivities:
                             conn, execution_key=key, result={"parsed": None, "reason": exc.code}
                         )
                         raise ApplicationError(
-                            "Tin credits or project spending limits do not allow drafting the "
-                            "emails; nothing was sent.",
+                            f"A billing check refused email drafting ({exc.code}); "
+                            "nothing was sent.",
                             non_retryable=True,
                         ) from None
                     result = {"parsed": None, "reason": "provider_result_unavailable"}
