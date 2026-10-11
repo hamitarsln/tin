@@ -312,7 +312,12 @@ class KeywordPlanActivities:
                     # Raw SDK/provider errors, headers and credentials never enter evidence;
                     # a model call keeps only a fixed label for why it failed.
                     result = (
-                        {"status": "unavailable", "reason": "spending_limit"}
+                        {
+                            "status": "unavailable",
+                            "reason": "spending_limit"
+                            if exc.code in {"spending_limit", "run_limit", "project_limit"}
+                            else f"billing_refused:{exc.code}",
+                        }
                         if isinstance(exc, BillingError)
                         else {
                             "status": "unknown",
@@ -1420,6 +1425,9 @@ def model_failure_cause(failure: dict) -> str:
     """Say in plain words why a model step stopped, from its stage and fixed reason label."""
     stage = STAGE_NAMES.get(failure.get("stage"), "keyword")
     reason = failure.get("reason") or ""
+    if reason.startswith("billing_refused:"):
+        code = reason.removeprefix("billing_refused:")
+        return f"a billing check refused the {stage} model call ({code})"
     if reason == "provider_timeout":
         seconds = MODEL_TIMEOUT_SECONDS.get(failure.get("stage"))
         limit = f"within {seconds // 60} minutes" if seconds else "in time"

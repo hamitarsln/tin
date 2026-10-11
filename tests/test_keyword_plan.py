@@ -556,6 +556,44 @@ async def test_unknown_attempt_never_repurchased_and_fingerprint_is_enforced():
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "code",
+    [
+        "spending_limit",
+        "run_limit",
+        "project_limit",
+        "unpriced_model",
+        "unmetered_operation",
+        "operation_already_attempted",
+        "usage_pending",
+        "insufficient_funds",
+        "spending_stopped",
+    ],
+)
+async def test_keyword_billing_refusal_keeps_its_cause_and_does_not_buy_again(code):
+    from tin_lite.billing_contracts import BillingError
+
+    activities, db, _, _, model = await fixture()
+    run_id = str(db.run.id)
+    model.generate.side_effect = BillingError(code, "Private diagnostic must not escape")
+    for _ in range(2):
+        with pytest.raises(ApplicationError):
+            await activities._model(run_id, "review", {})
+    is_limit = code in {"spending_limit", "run_limit", "project_limit"}
+    reason = "spending_limit" if is_limit else f"billing_refused:{code}"
+    receipt = db.effects[activities.key(run_id, "review")].result
+    assert receipt["status"] == "unavailable" and receipt["reason"] == reason
+    assert model.generate.await_count == 1
+    assert "Private diagnostic" not in json.dumps(receipt)
+    await activities.keyword_failure(run_id)
+    message = db.project_failure.await_args.kwargs["error_message"]
+    assert ("spending limit" in message) is is_limit
+    if not is_limit:
+        assert code in message and "could not be confirmed" not in message
+    assert "Private diagnostic" not in message
+
+
+@pytest.mark.asyncio
 async def test_budget_reserves_review_before_research_and_recovers_prepare_gap():
     activities, db, _, provider, _ = await fixture(budget=5)
     run_id = str(db.run.id)
