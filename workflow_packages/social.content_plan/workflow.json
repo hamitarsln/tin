@@ -4,7 +4,7 @@
     "key": "social.content_plan",
     "title": "Plan a sustainable social week",
     "description": "Use current project context to make an editable social content plan with pillars, a weekly calendar, and a routine sized to available time.",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "executor": "workflow.code",
     "system": "x",
     "schedule_modes": ["on_demand"],

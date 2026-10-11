@@ -170,20 +170,20 @@ async def test_fallback_context_when_files_absent_and_single_platform():
     assert "60 of 60 minutes" in result["content"]
 
 
-async def test_onboarding_plan_precedes_brand_and_wiki_when_curated_context_is_absent():
+async def test_onboarding_plan_precedes_brand_when_wiki_is_absent():
     module, definition = package()
     ctx = Context(
         {
             "reports/GROWTH_ONBOARDING_PLAN.md": CONTEXT,
             "brand/BRAND.md": CONTEXT,
             "BRAND.md": "Old unrelated brand",
-            "wiki/INDEX.md": "Obsolete code map",
         },
         validate_code_definition(definition),
     )
     await module.run(ctx, inputs())
     assert ctx.files.reads == [
         "context/product-marketing.md",
+        "wiki/INDEX.md",
         "reports/GROWTH_ONBOARDING_PLAN.md",
         module.STYLE_PATH,
     ]
@@ -191,10 +191,10 @@ async def test_onboarding_plan_precedes_brand_and_wiki_when_curated_context_is_a
     assert ctx.calls[0]["data"]["context_source"] == "reports/GROWTH_ONBOARDING_PLAN.md"
 
 
-async def test_adopted_brand_file_precedes_legacy_brand_and_wiki():
+async def test_adopted_brand_file_precedes_legacy_brand_when_wiki_is_absent():
     module, definition = package()
     ctx = Context(
-        {"brand/BRAND.md": CONTEXT, "BRAND.md": "Old brand", "wiki/INDEX.md": "Old wiki"},
+        {"brand/BRAND.md": CONTEXT, "BRAND.md": "Old brand"},
         validate_code_definition(definition),
     )
     await module.run(ctx, inputs())
@@ -276,3 +276,23 @@ async def test_oversized_style_fails_before_paid_call():
     with pytest.raises(ValueError, match="Writing-style guide"):
         await module.run(ctx, inputs())
     assert ctx.calls == []
+
+
+@pytest.mark.parametrize("size", [400, 35_000])
+async def test_current_wiki_precedes_old_onboarding_and_brand(size):
+    module, definition = package()
+    wiki = (CONTEXT + "\n") * (size // len(CONTEXT) + 1)
+    ctx = Context(
+        {
+            "wiki/INDEX.md": wiki,
+            "reports/GROWTH_ONBOARDING_PLAN.md": "The product and public site are unknown.",
+            "brand/BRAND.md": "Older brand copy",
+        },
+        validate_code_definition(definition),
+    )
+    await module.run(ctx, inputs(context_text="Fallback context"))
+    data = ctx.calls[0]["data"]
+    assert data["context_source"].startswith("wiki/INDEX.md")
+    assert data["product_context"].startswith(CONTEXT)
+    assert len(data["product_context"]) <= module.MAX_CONTEXT_CHARS
+    assert "reports/GROWTH_ONBOARDING_PLAN.md" not in ctx.files.reads

@@ -9,11 +9,13 @@ creates a recurring schedule.
 
 Run `social.content_plan` with optional `goal`, `hours_per_week` (default 3) and
 `platforms` (`auto`, `x`, `linkedin` or `both`). It reads the first available product
-context: `context/product-marketing.md`, `reports/GROWTH_ONBOARDING_PLAN.md`,
-`brand/BRAND.md`, legacy `BRAND.md`, then `wiki/INDEX.md`. `context_text` is a fallback
+context: `context/product-marketing.md`, `wiki/INDEX.md`,
+`reports/GROWTH_ONBOARDING_PLAN.md`, `brand/BRAND.md`, then legacy `BRAND.md`.
+`context_text` is a fallback
 when no usable file exists. It also reads the optional writing guide at
 `.agents/skills/writing-style/SKILL.md`. A dedicated product brief takes precedence,
-so an old wiki cannot override current context.
+so the wiki cannot override a curated brief. The wiki precedes older onboarding
+and brand files; a long wiki uses its first 14,000 characters, cut at a line.
 
 The result, `social/PLAN.md`, contains the audience, objective, platform reasoning,
 three to five pillars totaling 100%, a weekly calendar and a time budget. The first

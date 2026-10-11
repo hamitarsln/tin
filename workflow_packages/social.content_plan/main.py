@@ -6,10 +6,10 @@ import re
 OUTPUT_PATH = "social/PLAN.md"
 CONTEXT_PATHS = (
     "context/product-marketing.md",
+    "wiki/INDEX.md",
     "reports/GROWTH_ONBOARDING_PLAN.md",
     "brand/BRAND.md",
     "BRAND.md",
-    "wiki/INDEX.md",
 )
 STYLE_PATH = ".agents/skills/writing-style/SKILL.md"
 MAX_CONTEXT_CHARS = 14_000
@@ -110,6 +110,9 @@ def _read_context(ctx, inputs):
             raise ValueError(f"{path} is not valid text")
         if value.strip():
             if len(value.strip()) > MAX_CONTEXT_CHARS:
+                # shortcut: first part only; use section reads if key facts move past the cap.
+                if path == "wiki/INDEX.md":
+                    return f"{path} (first part)", _first_part(value.strip())
                 oversized = oversized or (path, value.strip())
                 continue
             return path, value.strip()
