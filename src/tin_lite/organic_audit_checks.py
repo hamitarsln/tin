@@ -1873,7 +1873,17 @@ def _inspection_findings(view: SiteView, host: str) -> list[dict]:
     """What Google's own URL Inspection reports for the key pages Tin asked about."""
     results = [row for row in view.inspection.get("results", []) if row.get("status") == "observed"]
     findings = []
-    unindexed = [row for row in results if row.get("indexed") is False]
+    indexed_urls = {row["url"] for row in results if row.get("indexed") is True}
+    unindexed = [
+        row
+        for row in results
+        if row.get("indexed") is False
+        and not (
+            row.get("coverage_state") == "Page with redirect"
+            and row.get("google_canonical") == row.get("user_canonical")
+            and row.get("google_canonical") in indexed_urls
+        )
+    ]
     if unindexed:
         findings.append(
             site_finding(
