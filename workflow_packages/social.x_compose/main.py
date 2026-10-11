@@ -473,7 +473,9 @@ def _validate_model(parsed, count, units, source_texts, assets):
                     claim = claim[0]
                 if label == "URL":
                     claim = claim.rstrip(".,!?;:'\"”’)}]")
-                if claim not in support_text:
+                elif label == "quotation":
+                    claim = claim.rstrip(".,")
+                if not claim or claim not in support_text:
                     raise ValueError(f"X post contains an unsupported {label}")
         attachments = item["attachments"]
         if not isinstance(attachments, list) or len(attachments) > 4:
