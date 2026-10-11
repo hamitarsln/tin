@@ -84,6 +84,27 @@ def test_audit_billing_gap_has_an_honest_explanation():
     assert "billing check refused" in str(gap) and "spending limit" not in str(gap)
 
 
+@pytest.mark.parametrize("code", ["spending_stopped", "unmetered_operation", "run_limit"])
+async def test_required_ads_read_projects_billing_cause_without_retrying(code):
+    work, db, _, integrations, _ = monitor_fixture()
+    run_id = str(db.run.id)
+    await work.prepare(run_id)
+    integrations.google_ads_call = AsyncMock(side_effect=BillingError(code, "Private diagnostic"))
+    for _ in range(2):
+        with pytest.raises(ApplicationError) as caught:
+            await work.read(run_id)
+        assert caught.value.non_retryable is True
+    assert integrations.google_ads_call.await_count == 1
+    assert integrations.mutations == []
+    assert work.router.generate.await_count == 0
+    await work.failure(run_id)
+    message = db.project_failure.await_args.kwargs["error_message"]
+    assert ("spending limit" in message) is (code == "run_limit")
+    if code != "run_limit":
+        assert code in message
+    assert "Private diagnostic" not in message
+
+
 @pytest.mark.parametrize(
     "code", ["unpriced_model", "unmetered_operation", "operation_already_attempted"]
 )

@@ -409,6 +409,23 @@ class PaidAdsMonitorActivities:
                 gaql = builder()
             result = await self._ads(run_id, f"read:{name}", "search", {"query": gaql})
             if result.get("status") != "completed" or result.get("error"):
+                if name == "campaign_7d" and result.get("reason") in {
+                    "billing_refused",
+                    "spending_limit",
+                }:
+                    await self._save(
+                        run_id,
+                        "failure",
+                        {
+                            "code": result["reason"],
+                            "stage": f"read:{name}",
+                            "billing_error_code": result.get("billing_error_code"),
+                        },
+                    )
+                    raise ApplicationError(
+                        "A billing check refused the required campaign read. Nothing was changed.",
+                        non_retryable=True,
+                    )
                 unavailable.append(name)
                 raw[name] = []
             else:
