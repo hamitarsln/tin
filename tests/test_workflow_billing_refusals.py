@@ -23,6 +23,7 @@ from tin_lite.organic_audit_ai import AuditValidationError
         "spending_limit",
         "run_limit",
         "project_limit",
+        "budget_exhausted",
         "unpriced_model",
         "unmetered_operation",
         "operation_already_attempted",
@@ -54,7 +55,7 @@ async def test_refusal_classification_and_replay(workflow, code):
     result = await invoke()
     assert await invoke() == result
     assert call.await_count == 1
-    is_limit = code in {"spending_limit", "run_limit", "project_limit"}
+    is_limit = code in {"spending_limit", "run_limit", "project_limit", "budget_exhausted"}
     assert result["reason"] == ("spending_limit" if is_limit else "billing_refused")
     if not is_limit:
         assert result["billing_error_code"] == code

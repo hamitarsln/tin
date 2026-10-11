@@ -23,7 +23,7 @@ class BillingError(RuntimeError):
 
 
 def billing_refusal(error: BillingError) -> dict[str, str]:
-    if error.code in {"spending_limit", "run_limit", "project_limit"}:
+    if error.code in {"spending_limit", "run_limit", "project_limit", "budget_exhausted"}:
         return {"reason": "spending_limit"}
     return {"reason": "billing_refused", "billing_error_code": error.code}
 
