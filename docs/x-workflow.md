@@ -53,6 +53,8 @@ The parent workflow uses the existing voice and composition workflows in order:
 
 An account change during guide review stops the request rather than switching voices.
 A failed capture does not silently buy another capture or proceed to composition.
+Known sampling, integration and billing failures keep their safe reason on the failed run.
+Unexpected failures use a generic message without private provider details.
 Retries reuse the same child runs. Both child definitions are published with the parent
 and pinned to its catalog revision; the project files are read at each child's start.
 The parent links to the composer's saved draft instead of saving a second copy.

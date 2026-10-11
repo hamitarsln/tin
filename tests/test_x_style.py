@@ -149,6 +149,8 @@ class FakeDB:
         return self.run
 
     async def get_effect(self, key):
+        if key.endswith(":x_style_model"):
+            return self.model_receipt
         assert key.endswith(":x_style_context")
         result = {"revision": "a" * 40, "existing_guide": self.existing_guide}
         if self.policy_version is not None:
@@ -164,7 +166,12 @@ class FakeDB:
         yield object(), self.model_receipt
 
     async def start_effect(self, conn, *, execution_key, operation):
-        self.model_receipt = SimpleNamespace(status="started")
+        self.model_receipt = SimpleNamespace(status="started", result={})
+
+    async def save_effect_progress(self, conn, *, execution_key, result):
+        assert execution_key.endswith(":x_style_model")
+        assert self.model_receipt.status == "started"
+        self.model_receipt.result = result
 
     async def complete_effect(self, conn, *, execution_key, result):
         self.completed = result
@@ -488,3 +495,42 @@ async def test_an_extraction_failure_says_what_stopped_it(monkeypatch):
     with pytest.raises(ApplicationError) as failure:
         await run_extract(monkeypatch, {"sample_source": "connected"}, FailingX([]))
     assert "X returned an incomplete result. No replacement was purchased" in str(failure.value)
+
+
+@pytest.mark.parametrize("known", [True, False])
+async def test_failure_projection_keeps_safe_reason_without_rebuying(monkeypatch, known):
+    from unittest.mock import AsyncMock
+
+    import tin_lite.x_style_activities as activities
+    from tin_lite.integrations import IntegrationUpstreamError
+
+    monkeypatch.setattr(activities, "model_usage_scope", lambda **kwargs: nullcontext())
+    run = SimpleNamespace(
+        id=RUN_ID,
+        executor=x_style.KEY,
+        status=SimpleNamespace(value="running"),
+        project_id=UUID("a0000000-0000-0000-0000-000000000061"),
+        input={},
+    )
+    db = FakeDB(run)
+    db.project_failure = AsyncMock()
+    x = FakeX()
+    x.timeline = AsyncMock(
+        side_effect=(
+            IntegrationUpstreamError("X returned an incomplete result")
+            if known
+            else ConnectionError("private provider URL")
+        )
+    )
+    router = FakeRouter()
+    worker = XStyleActivities(database=db, storage=None, router=router, x_connection=x)
+    for _ in range(2):
+        with pytest.raises(ApplicationError):
+            await worker.extract(str(RUN_ID))
+        await worker.failure(str(RUN_ID))
+        message = db.project_failure.await_args.kwargs["error_message"]
+        assert ("X returned an incomplete result" in message) == known
+        assert "private provider URL" not in message
+        assert "No replacement was purchased" in message
+    assert db.model_receipt.status == "started"
+    assert x.timeline.await_count == 1 and router.calls == 0

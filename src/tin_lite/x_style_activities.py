@@ -365,11 +365,14 @@ class XStyleActivities:
                     if isinstance(exc, (ValueError, IntegrationError, BillingError))
                     else ""
                 )
-                raise ApplicationError(
+                message = (
                     f"X voice extraction could not be confirmed. {reason}No replacement was "
-                    "purchased. The current guide is unchanged.",
-                    non_retryable=True,
-                ) from None
+                    "purchased. The current guide is unchanged."
+                )
+                await self.db.save_effect_progress(
+                    conn, execution_key=key, result={"failure_message": message}
+                )
+                raise ApplicationError(message, non_retryable=True) from None
 
     @activity.defn(name="x_style_propose")
     async def propose(self, run_id: str) -> bool:
@@ -594,9 +597,11 @@ class XStyleActivities:
     async def failure(self, run_id: str):
         run = await self.db.get_run(UUID(run_id))
         if run and run.executor == x_style.KEY:
+            receipt = await self.db.get_effect(f"{run.id}:x_style_model")
             await self.db.project_failure(
                 run_id=run.id,
-                error_message=(
+                error_message=((receipt.result or {}).get("failure_message") if receipt else None)
+                or (
                     "X voice capture could not confirm completion. Check the current guide "
                     "and any saved result before trying again."
                 ),
