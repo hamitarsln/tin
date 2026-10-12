@@ -140,7 +140,7 @@ async def inspect(f):
     return await f.service.inspect(project_id=f.project.id, audit_run_id=f.run.id)
 
 
-@pytest.mark.parametrize("policy", ["organic-audit-v14", "organic-audit-v15"])
+@pytest.mark.parametrize("policy", [f"organic-audit-v{version}" for version in range(11, 16)])
 async def test_published_duplicate_metadata_uses_the_pinned_repair_routing(policy):
     f = source_fixture(
         count=2,
