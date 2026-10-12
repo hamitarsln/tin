@@ -81,6 +81,8 @@ def metrics(*, clicks, cost_usd, conversions, impressions=1000, lost=None):
 
 
 def rows_for(query: str, *, reasons) -> list[dict]:
+    if "FROM customer" in query:
+        return [{"customer": {"id": CUSTOMER, "currencyCode": "USD"}}]
     campaign = {
         "id": CAMPAIGN_ID,
         "name": "Tin Search · Claw Messenger [tin:abcdef123456]",
@@ -381,7 +383,7 @@ async def test_full_path_applies_bounded_changes_saves_one_proposal_and_publishe
     run_id = str(db.run.id)
     await finish(activities, run_id)
 
-    assert len(integrations.searches) == 9
+    assert len(integrations.searches) == len(READS)
     for name, _query, _days in READS:
         receipt = db.effects[activities.key(run_id, f"read:{name}")]
         assert receipt.status == "completed" and receipt.result["status"] == "completed"
@@ -431,7 +433,7 @@ async def test_quiet_period_reads_only_and_says_so():
     activities, db, storage, integrations, model = fixture(db=MonitorDB(enabled_days_ago=1))
     run_id = str(db.run.id)
     await finish(activities, run_id)
-    assert len(integrations.searches) == 9
+    assert len(integrations.searches) == len(READS)
     assert integrations.mutations == []
     assert db.proposals == {}
     storage.publish_state_documents.assert_not_awaited()

@@ -79,6 +79,7 @@ OUTCOMES = (
     "campaign_exists",
     "account_disabled",
     "not_recommended",
+    "unsupported_currency",
 )
 LAUNCHABLE = {"test", "continue", "go", "restart", "restructure"}
 LIMITS = {
@@ -381,6 +382,16 @@ def gate(*, assessment: dict, account: dict, site: dict, inputs: dict, existing_
             "text": (
                 f"The Google Ads account is {str(customer.get('status')).lower()}, so nothing can "
                 "run in it. Reactivate it in Google Ads first."
+            ),
+            "conversion_action": None,
+        }
+    if customer.get("currency_code") != "USD":
+        return {
+            "outcome": "unsupported_currency",
+            "text": (
+                "Tin's campaign budgets and bids are in USD, but this account does not "
+                "confirm USD as its currency. Nothing will be created. Use a USD account; "
+                "Tin does not convert currencies."
             ),
             "conversion_action": None,
         }

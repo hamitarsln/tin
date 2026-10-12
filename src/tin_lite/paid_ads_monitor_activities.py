@@ -43,6 +43,7 @@ STEP_TOTAL = 5
 # it the client stops at its 90-second default and a slow but valid answer is lost.
 MODEL_TIMEOUT_SECONDS = 225
 READS = (
+    ("account", "account", None),
     ("campaign_7d", "campaign_health", 7),
     ("campaign_14d", "campaign_health", 14),
     ("campaign_30d", "campaign_health", 30),
@@ -396,6 +397,21 @@ class PaidAdsMonitorActivities:
                 raw[name] = []
             else:
                 raw[name] = _rows(result)
+            if name == "account":
+                if name in unavailable:
+                    raise ApplicationError(
+                        "The Google Ads account read was unavailable "
+                        f"({result.get('error') or result.get('reason') or 'unknown'}). "
+                        "Nothing was changed.",
+                        non_retryable=result.get("error") is not None,
+                    )
+                account = next(iter(raw[name]), {})
+                if (account.get("customer") or {}).get("currencyCode") != "USD":
+                    raise ApplicationError(
+                        "Google Ads did not confirm USD as the account currency. "
+                        "Tin's monitor compares costs in USD; nothing was changed.",
+                        non_retryable=True,
+                    )
             if activity.in_activity():
                 activity.heartbeat({"stage": name})
         if "campaign_7d" in unavailable:

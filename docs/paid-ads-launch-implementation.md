@@ -29,6 +29,11 @@ manager link from Tin's side.
 
 ## Inputs and the gate
 
+Launch and monitoring require the account read to confirm `USD`. Their budgets,
+bids and cost comparisons are in dollars; Google Ads interprets amounts in the
+account's currency. Tin stops before tracking changes, model calls or campaign
+writes when the currency is missing or different. No exchange rate is guessed.
+
 `paid_ads_launch.INPUT_SCHEMA` takes the assessment run (verified against its publish receipt
 by `paid_ads_sources.pinned_bundle`), an optional daily budget and click ceiling, an optional
 landing page and campaign name, notes and a model-cost ceiling. `gate()` decides one outcome
@@ -43,7 +48,7 @@ last thirty days) and the landing page:
   telling the founder where the event snippet goes; they run the launch again once conversions
   record. This is the hard block.
 - `needs_billing`, `needs_link`, `account_disabled`, `campaign_exists`,
-  `landing_page_unreachable`, `not_recommended`: a `SETUP.md` note is published and the run ends
+  `landing_page_unreachable`, `not_recommended`, `unsupported_currency`: a `SETUP.md` note is published and the run ends
   failed with that reason, since a review-pinned run cannot succeed without an approval.
 
 ## The plan and the one approval
