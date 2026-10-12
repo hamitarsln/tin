@@ -7,9 +7,11 @@ from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
+from test_workflow_schedules import FakeResponses
 
 from tin_lite.activities import TinActivities
 from tin_lite.domain import RunStatus
+from tin_lite.weekly_brief import WeeklyBriefReporter, validate_weekly_brief_artifacts
 
 
 @pytest.mark.parametrize(
@@ -67,6 +69,28 @@ async def test_weekly_brief_keeps_binary_receipt_and_reads_later_text(media):
     }
     assert text_source.artifact_ref == runs[1].artifact_ref
     assert text_source.content == report
+
+    reporter = WeeklyBriefReporter(responses=FakeResponses(), skill_suite="Use recorded results.")
+    result = await reporter.report(
+        project_name="Synthetic QA project",
+        period_start=end - timedelta(days=7),
+        period_end=end,
+        inputs={},
+        sources=sources,
+    )
+    docs = reporter.build_artifacts(
+        run_id="fixture-run",
+        artifact_path="reports/weekly/fixture.md",
+        evidence_path="reports/weekly/fixture/evidence.json",
+        result=result,
+    )
+    validate_weekly_brief_artifacts(
+        *docs,
+        artifact_path="reports/weekly/fixture.md",
+        evidence_path="reports/weekly/fixture/evidence.json",
+    )
+    assert runs[0].artifact_ref in result["source_refs"]
+    assert runs[1].artifact_ref in result["source_refs"]
 
 
 async def test_weekly_brief_does_not_hide_storage_failure():

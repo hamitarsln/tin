@@ -261,7 +261,8 @@ Markdown reader. Email, Slack, and other delivery providers remain separate inte
 notification failure cannot invalidate a successfully created report.
 Run artifacts that are not UTF-8 text or contain NUL bytes contribute their run status,
 summary and artifact reference instead of their bytes. Text artifacts still contribute their
-contents; a storage read failure remains an error.
+contents; a storage read failure remains an error. A usable model summary without a
+top-level heading gets a standard weekly-brief heading; an empty summary is still rejected.
 
 Activity is a flat Postgres-backed ledger rather than a card feed. It groups real product events by
 day, keeps run facts in fixed mono lanes, links completed Markdown artifacts into the generic
