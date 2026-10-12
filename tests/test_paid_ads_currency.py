@@ -58,16 +58,32 @@ async def test_monitor_stops_before_model_or_mutation(currency):
     assert not model.calls
 
 
-@pytest.mark.parametrize("reason", ["spending_limit", "provider_result_unavailable"])
+@pytest.mark.parametrize(
+    "reason", ["spending_limit", "provider_result_unavailable", "billing_refused"]
+)
 async def test_unavailable_account_read_keeps_its_reason(reason):
     activities, db, storage, integrations, model = monitor_fixture()
     run_id = str(db.run.id)
     await activities.prepare(run_id)
 
     async def unavailable(*args, **kwargs):
-        return {"status": "unavailable", "reason": reason}
+        return {
+            "status": "unavailable",
+            "reason": reason,
+            "billing_error_code": "unmetered_operation" if reason == "billing_refused" else None,
+        }
 
     activities._ads = unavailable
-    with pytest.raises(ApplicationError, match=reason):
+    with pytest.raises(ApplicationError, match=reason) as caught:
         await activities.read(run_id)
     assert not integrations.mutations and not model.calls
+    await activities.failure(run_id)
+    message = db.project_failure.await_args.kwargs["error_message"]
+    expected = {
+        "spending_limit": "spending limit",
+        "provider_result_unavailable": "provider_result_unavailable",
+        "billing_refused": "unmetered_operation",
+    }[reason]
+    assert expected in message
+    assert "account read" in message and "model call" not in message
+    assert caught.value.non_retryable is (reason != "provider_result_unavailable")

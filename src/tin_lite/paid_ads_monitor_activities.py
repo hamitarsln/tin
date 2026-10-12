@@ -399,11 +399,21 @@ class PaidAdsMonitorActivities:
                 raw[name] = _rows(result)
             if name == "account":
                 if name in unavailable:
+                    await self._save(
+                        run_id,
+                        "failure",
+                        {
+                            "code": "account_unavailable",
+                            "reason": result.get("error") or result.get("reason") or "unknown",
+                            "billing_error_code": result.get("billing_error_code"),
+                        },
+                    )
                     raise ApplicationError(
                         "The Google Ads account read was unavailable "
                         f"({result.get('error') or result.get('reason') or 'unknown'}). "
                         "Nothing was changed.",
-                        non_retryable=result.get("error") is not None,
+                        non_retryable=result.get("error") is not None
+                        or result.get("reason") in {"spending_limit", "billing_refused"},
                     )
                 account = next(iter(raw[name]), {})
                 if (account.get("customer") or {}).get("currencyCode") != "USD":
@@ -690,4 +700,12 @@ class PaidAdsMonitorActivities:
             "The Google Ads check stopped before finishing. Changes already applied stand; "
             "the next check reconciles anything unconfirmed.",
         )
+        if failure.get("code") == "account_unavailable":
+            reason = failure.get("billing_error_code") or failure.get("reason") or "unknown"
+            if reason == "spending_limit":
+                reason = "spending limit"
+            message = (
+                "The Google Ads check stopped because the account read was unavailable "
+                f"({reason}). Nothing was changed."
+            )
         await self.db.project_failure(run_id=run.id, error_message=message)
