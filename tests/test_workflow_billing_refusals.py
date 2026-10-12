@@ -103,6 +103,7 @@ async def test_required_ads_read_projects_billing_cause_without_retrying(code):
     assert ("spending limit" in message) is (code == "run_limit")
     if code != "run_limit":
         assert code in message
+    assert "model call" not in message
     assert "Private diagnostic" not in message
 
 

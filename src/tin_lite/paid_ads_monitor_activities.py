@@ -700,12 +700,12 @@ class PaidAdsMonitorActivities:
         failure = await self._result(run_id, "failure") or {}
         message = {
             "billing_refused": (
-                "The Google Ads check stopped because a billing check refused a model call "
+                "The Google Ads check stopped because a billing check refused a request "
                 f"({failure.get('billing_error_code')}). Automatic changes already applied stand; "
                 "nothing else was changed."
             ),
             "spending_limit": (
-                "The Google Ads check stopped because a model call reached the spending limit. "
+                "The Google Ads check stopped because a request reached the spending limit. "
                 "Automatic changes already applied stand; nothing else was changed."
             ),
             "model_unavailable": (
